@@ -1,3 +1,12 @@
+package about
+
+import (
+	"fmt"
+
+	"github.com/spf13/cobra"
+)
+
+const license = `
 /*
  * ------------------------------------------------------------
  * "THE BEERWARE LICENSE" (Revision 42):
@@ -7,3 +16,13 @@
  * buy me a beer in return.
  * ------------------------------------------------------------
  */
+`
+
+var License = &cobra.Command{
+	Use:   "license",
+	Short: "Show license information",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		fmt.Println(license)
+		return nil
+	},
+}

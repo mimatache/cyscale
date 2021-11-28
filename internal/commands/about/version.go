@@ -1,4 +1,4 @@
-package version
+package about
 
 import (
 	"fmt"
@@ -8,9 +8,10 @@ import (
 	"github.com/mimatache/cyscale/internal/info"
 )
 
+// Version gives dinformation about the current application (version, build date, hash) to be able to more easily track down the build
 var Version = &cobra.Command{
 	Use:   "version",
-	Short: "Show version",
+	Short: "Show version information",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		appInfo := info.AppInfo()
 		fmt.Println("Name:      ", appInfo.Name)
