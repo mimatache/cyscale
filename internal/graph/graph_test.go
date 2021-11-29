@@ -13,9 +13,8 @@ import (
 )
 
 const (
-	dragonType  = "dragon"
-	unicornType = "unicorn"
-	puppyType   = "puppy"
+	dragonType = "dragon"
+	puppyType  = "puppy"
 )
 
 type puppy struct {
@@ -57,10 +56,10 @@ func Test_Graph_AddConcurrently(t *testing.T) {
 	wg.Add(concurrencyCount)
 	grf := graph.New()
 	for i := 0; i < concurrencyCount; i++ {
-		go func(index int) {
+		go func() {
 			defer wg.Done()
 			grf.InsertNode(puppyType, []byte{})
-		}(i)
+		}()
 	}
 	wg.Wait()
 	nodes := grf.ListNodes()
