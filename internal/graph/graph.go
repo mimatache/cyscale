@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -11,74 +10,135 @@ var (
 	ErrNotFound = errors.New("could not find an element matching the request")
 )
 
-type Graph interface {
-	AddNodeTypes(nodesType ...string)
-	GetNodesByType(nodesType string) (Nodes, error)
-	ListNodeTypes() []string
+// FilterNodes is used as an interface for filtering functionality. This allows each user to provide their own way of filtering different items
+type FilterNodes func(node *Node) bool
+
+func FilterNodesByLabel(label string) FilterNodes {
+	return func(node *Node) bool {
+		return node.label == label
+	}
 }
 
-type Nodes interface {
+type FilterRelationship func(rel Relationship) bool
+
+func FilterRelByLabel(label string) FilterRelationship {
+	return func(rel Relationship) bool {
+		return rel.Label == label
+	}
 }
 
-type neighbor struct {
-	ID   string
-	Type string
+func FilterRelByTo(toID string) FilterRelationship {
+	return func(rel Relationship) bool {
+		return rel.To == toID
+	}
 }
 
-type relationships map[string][]neighbor
-
-type node struct {
-	Body          json.RawMessage
-	Relationships relationships
+func FilterRelByFrom(fromID string) FilterRelationship {
+	return func(rel Relationship) bool {
+		return rel.From == fromID
+	}
 }
 
-type nodes map[string]node
+func New() *Graph {
+	return &Graph{
+		nodes:         map[string]*Node{},
+		relationships: map[string]Relationship{},
+	}
+}
 
-type assets struct {
-	items map[string]nodes
+// Graph represents a collection of different nodes of the same type
+type Graph struct {
 	sync.RWMutex
+	nodes         map[string]*Node
+	relationships map[string]Relationship
 }
 
-// AddNodeTypes is used to add new types of entities to the available ones.
-// This operation is done synchroniously, to avoid race conditions
-func (a *assets) AddNodeTypes(nodeTypes ...string) {
-	a.Lock()
-	defer a.Unlock()
-	for _, nodeType := range nodeTypes {
-		if _, ok := a.items[nodeType]; !ok {
-			a.items[nodeType] = nodes{}
+// InsertNode adds a new node to the graph
+func (g *Graph) InsertNode(label string, body []byte) *Node {
+	g.Lock()
+	defer g.Unlock()
+	node := newNode(label, body)
+	g.nodes[node.id] = node
+	return node.Copy()
+}
+
+// GetNodeByID returns the node that has the given ID
+func (g *Graph) GetNodeByID(id string) (*Node, error) {
+	g.RLock()
+	defer g.RUnlock()
+	item, ok := g.nodes[id]
+	if !ok {
+		return nil, fmt.Errorf("%w; node with id '%s'", ErrNotFound, id)
+	}
+	return item, nil
+}
+
+// ListNodes returns a map of all the nodes that match all the where clauses provided.
+func (g *Graph) ListNodes(where ...FilterNodes) []*Node {
+	g.RLock()
+	defer g.RUnlock()
+	matchingNodes := make([]*Node, 0, len(g.nodes))
+	for _, item := range g.nodes {
+		matches := true
+		for _, clause := range where {
+			if ok := clause(item); !ok {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			matchingNodes = append(matchingNodes, item)
 		}
 	}
+
+	return matchingNodes
 }
 
-// GetNodesOfType is used to retrieve Nodes of the given type from the available ones.
-// This operation can be done synchroniously with its self, but blocks concurrent writes to avoid race conditions
-func (a *assets) GetNodesByType(nodeType string) (Nodes, error) {
-	a.RLock()
-	defer a.RUnlock()
-	nodes, ok := a.items[nodeType]
+// Link is used to establish a relationship between the current item and another one
+func (g *Graph) AddRelationship(fromID, toID, label string) (Relationship, error) {
+	fromNode, err := g.GetNodeByID(fromID)
+	if err != nil {
+		return Relationship{}, fmt.Errorf("getNodeByID %s; %w", fromID, err)
+	}
+
+	toNode, err := g.GetNodeByID(toID)
+	if err != nil {
+		return Relationship{}, fmt.Errorf("getNodeByID %s; %w", fromID, err)
+	}
+
+	rel := newRelationship(fromNode, toNode, label)
+	fromNode.addRelationship(rel)
+	g.relationships[rel.ID] = rel
+
+	return rel, nil
+}
+
+func (g *Graph) GetRelationshipByID(id string) (Relationship, error) {
+	g.RLock()
+	defer g.RUnlock()
+	item, ok := g.relationships[id]
 	if !ok {
-		return nil, fmt.Errorf("%w; node type %s", ErrNotFound, nodeType)
+		return Relationship{}, fmt.Errorf("%w; relationship with id '%s'", ErrNotFound, id)
 	}
-	return nodes, nil
+	return item, nil
 }
 
-// ListNodeTypes returns the types of nodes available in the assets
-func (a *assets) ListNodeTypes() []string {
-	a.RLock()
-	defer a.RUnlock()
-	nodeTypes := make([]string, len(a.items))
-	i := 0
-	for k := range a.items {
-		nodeTypes[i] = k
-		i++
+func (g *Graph) ListRelationships(filters ...FilterRelationship) []Relationship {
+	g.RLock()
+	defer g.RUnlock()
+	matchingRelationships := make([]Relationship, 0, len(g.relationships))
+	for _, item := range g.relationships {
+		matches := true
+		for _, clause := range filters {
+			if ok := clause(item); !ok {
+				matches = false
+				break
+			}
+		}
+		if matches {
+			matchingRelationships = append(matchingRelationships, item)
+		}
 	}
-	return nodeTypes
-}
 
-// New creates a new empty Graph structure to be used to store new entities and establish relationships between them
-func New() Graph {
-	return &assets{
-		items: map[string]nodes{},
-	}
+	return matchingRelationships
 }
