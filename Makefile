@@ -1,6 +1,6 @@
 SHELL:=/bin/bash
 APP:=cyscale-cli
-BUILD_DIR:=build
+BUILD_DIR:=.build
 BIN_DIR:=$(BUILD_DIR)/$(APP)/_bin
 
 DOCKER_REPO?="matache91mh"
@@ -16,8 +16,8 @@ LDFLAGS += -X 'github.com/mimatache/cyscale/internal/info.commitHash=${COMMIT_HA
 LDFLAGS += -X 'github.com/mimatache/cyscale/internal/info.buildDate=${BUILD_DATE}'
 
 
-all: install-go-tools generate fmt lint test build
-	
+all: install-go-tools lint test build
+
 build:
 	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -v -o $(BIN_DIR)/$(APP) .
 
