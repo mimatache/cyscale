@@ -26,7 +26,7 @@ test-ci:
 	go tool cover -func=coverage.out
 
 test:
-	go test -cover ./...
+	go test -v -race -cover ./...
 
 install-go-tools:
 	GO111MODULE=on CGO_ENABLED=0 go get github.com/golangci/golangci-lint/cmd/golangci-lint

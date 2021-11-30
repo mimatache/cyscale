@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/mimatache/cyscale/internal/commands/about"
+	"github.com/mimatache/cyscale/internal/commands/verifier"
 )
 
 // Root is the start of the application. All other commands should either be added to this command, or to a command that is in intself added to this command
@@ -22,6 +23,7 @@ This should not be treated as an exhaustive security scan of your cloud environm
 	rootCommand.AddCommand(
 		about.Version,
 		about.License,
+		verifier.Verify(),
 	)
 
 	return rootCommand

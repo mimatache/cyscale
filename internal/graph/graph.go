@@ -13,9 +13,25 @@ var (
 // FilterNodes is used as an interface for filtering functionality. This allows each user to provide their own way of filtering different items
 type FilterNodes func(node *Node) bool
 
-func FilterNodesByLabel(label string) FilterNodes {
+func FilterNodesByLabel(labels ...string) FilterNodes {
 	return func(node *Node) bool {
-		return node.label == label
+		for _, label := range labels {
+			if node.label == label {
+				return true
+			}
+		}
+		return false
+	}
+}
+
+func FilterNodesByName(names ...string) FilterNodes {
+	return func(node *Node) bool {
+		for _, name := range names {
+			if node.name == name {
+				return true
+			}
+		}
+		return false
 	}
 }
 
@@ -54,10 +70,10 @@ type Graph struct {
 }
 
 // InsertNode adds a new node to the graph
-func (g *Graph) InsertNode(label string, body []byte) *Node {
+func (g *Graph) InsertNode(name, label string, body []byte) *Node {
 	g.Lock()
 	defer g.Unlock()
-	node := newNode(label, body)
+	node := newNode(name, label, body)
 	g.nodes[node.id] = node
 	return node.Copy()
 }
@@ -107,7 +123,7 @@ func (g *Graph) AddRelationship(fromID, toID, label string) (Relationship, error
 	}
 
 	rel := newRelationship(fromNode, toNode, label)
-	fromNode.addRelationship(rel)
+	fromNode.addRelationship(rel.ID)
 	g.relationships[rel.ID] = rel
 
 	return rel, nil

@@ -1,17 +1,19 @@
 package graph
 
 import (
+	"fmt"
 	"sync"
 
 	guuid "github.com/google/uuid"
 )
 
-func newNode(label string, body []byte) *Node {
+func newNode(name, label string, body []byte) *Node {
 	return &Node{
 		id:            guuid.New().String(),
 		label:         label,
+		name:          name,
 		Body:          body,
-		relationships: []Relationship{},
+		relationships: []string{},
 	}
 }
 
@@ -19,13 +21,18 @@ func newNode(label string, body []byte) *Node {
 type Node struct {
 	sync.RWMutex
 	id            string
+	name          string
 	label         string
 	Body          []byte
-	relationships []Relationship
+	relationships []string
 }
 
 func (n *Node) GetID() string {
 	return n.id
+}
+
+func (n *Node) GetName() string {
+	return n.name
 }
 
 func (n *Node) GetLabel() string {
@@ -34,37 +41,29 @@ func (n *Node) GetLabel() string {
 
 // Copy returns a duplicate of the Node. This is done to avoid unwanted changes and race conditions
 func (n *Node) Copy() *Node {
-	relCopy := make([]Relationship, len(n.relationships))
+	relCopy := make([]string, len(n.relationships))
 	copy(relCopy, n.relationships)
 	return &Node{
 		id:            n.id,
+		name:          n.name,
 		label:         n.label,
 		Body:          n.Body,
 		relationships: relCopy,
 	}
 }
 
-func (n *Node) addRelationship(relationship Relationship) {
+func (n *Node) addRelationship(relationship string) {
 	n.Lock()
 	defer n.Unlock()
 	n.relationships = append(n.relationships, relationship)
 }
 
-func (n *Node) ListRelationships(filters ...FilterRelationship) []Relationship {
+func (n *Node) ListRelationships() []string {
 	n.RLock()
 	defer n.RUnlock()
-	if len(filters) == 0 {
-		relCopy := make([]Relationship, len(n.relationships))
-		copy(relCopy, n.relationships)
-		return relCopy
-	}
-	relCopy := make([]Relationship, 0, len(n.relationships))
-	for _, rel := range n.relationships {
-		for _, filter := range filters {
-			if filter(rel) {
-				relCopy = append(relCopy, rel)
-			}
-		}
-	}
-	return relCopy
+	return n.relationships
+}
+
+func (n *Node) String() string {
+	return fmt.Sprintf("{Asset:%s}", n.name)
 }

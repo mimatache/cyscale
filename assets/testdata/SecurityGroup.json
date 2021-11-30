@@ -1,0 +1,18 @@
+[
+    {
+        "name": "SecurityGroup_1",
+        "groupID": "sg-095531efae90566d5",
+        "vpcID": "vpc-06bcacc5531641a68",
+        "exposedPorts": [80, 443],
+        "direction": "inbound",
+        "ipList": ["0.0.0.0/0"]
+    },
+    {
+        "name": "SecurityGroup_2",
+        "groupID": "sg-0ffa6efa4cce53076",
+        "vpcID": "vpc-0ab6a5a04e78280f5",
+        "exposedPorts": [21],
+        "direction": "inbound",
+        "ipList": ["192.168.0.0/24", "0.0.0.0/0"]
+    }
+]
