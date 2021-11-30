@@ -30,6 +30,7 @@ func Verify() *cobra.Command {
 
 	verifyCommand.AddCommand(
 		exposedVMCommand,
+		vmUsingHTTPPort,
 	)
 
 	return verifyCommand
@@ -49,6 +50,27 @@ var exposedVMCommand = &cobra.Command{
 			return nil
 		}
 		fmt.Println("Exposed VMs:")
+		for _, vm := range vms {
+			fmt.Printf("\t• %s\n", vm)
+		}
+		return nil
+	},
+}
+
+var vmUsingHTTPPort = &cobra.Command{
+	Use:   "vms-using-http-port",
+	Short: "vms-using-http-port shows which VMs are using the HTTP port, either directly or through an interface",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		m, err := getAssetManager(interfaces, vms, sgs, vpcs)
+		if err != nil {
+			return fmt.Errorf("could not load assets; %w", err)
+		}
+		vms := m.ListHTTPPortVMs()
+		if len(vms) == 0 {
+			fmt.Println("There are VMs using the HTTP port")
+			return nil
+		}
+		fmt.Println("VMs using HTTP port:")
 		for _, vm := range vms {
 			fmt.Printf("\t• %s\n", vm)
 		}
