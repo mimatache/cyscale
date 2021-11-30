@@ -3,6 +3,7 @@ package assets
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/mimatache/cyscale/internal/graph"
 )
@@ -169,4 +170,40 @@ func (m *Manager) loadSGs(data []byte) error {
 		}
 	}
 	return nil
+}
+
+func (m *Manager) ListExposedVMs() []string {
+	exposedVMs := []string{}
+
+	openedSecurityGroups := m.graph.ListNodes(
+		graph.FilterNodesByLabel(SecurityGroupType),
+		func(node *graph.Node) bool {
+			sg := SecurityGroup{}
+			if err := json.Unmarshal(node.Body, &sg); err != nil {
+				// only printing the error, since an error here means there is no useful information to extract, but we still need to continue checking
+				// TODO: consider adding a check for invalid bodies?
+				log.Printf("error: unable to unmarshal security group %s; %s; this might indicate corrupt data \n", node.GetName(), err.Error())
+			}
+			for _, network := range sg.IPList {
+				if network == "0.0.0.0/0" {
+					return true
+				}
+			}
+			return false
+		})
+
+	for _, v := range openedSecurityGroups {
+		relationships := m.graph.ListRelationships(graph.FilterRelByTo(v.GetID()))
+		for _, item := range relationships {
+			items := m.graph.ListNodes(
+				graph.FilterNodesByLabel(VirtualMacineType),
+				func(node *graph.Node) bool {
+					return node.GetID() == item.From
+				})
+			for _, item := range items {
+				exposedVMs = append(exposedVMs, item.GetName())
+			}
+		}
+	}
+	return exposedVMs
 }

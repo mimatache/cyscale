@@ -37,11 +37,20 @@ func Verify() *cobra.Command {
 
 var exposedVMCommand = &cobra.Command{
 	Use:   "exposed-vms",
-	Short: "exposed-vms shows which VMs are exposed to the internet",
+	Short: "exposed-vms shows which VMs are exposed to the internet (i.e.: allow connections from 0.0.0.0/0)",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		_, err := getAssetManager(interfaces, vms, sgs, vpcs)
+		m, err := getAssetManager(interfaces, vms, sgs, vpcs)
 		if err != nil {
-			return fmt.Errorf("could not load data; %w", err)
+			return fmt.Errorf("could not load assets; %w", err)
+		}
+		vms := m.ListExposedVMs()
+		if len(vms) == 0 {
+			fmt.Println("There are no exposed VMs")
+			return nil
+		}
+		fmt.Println("Exposed VMs:")
+		for _, vm := range vms {
+			fmt.Printf("\t• %s\n", vm)
 		}
 		return nil
 	},
