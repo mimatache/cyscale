@@ -1,0 +1,10 @@
+[
+    {
+        "name": "VPC_1",
+        "vpcID": "vpc-06bcacc5531641a68"
+    },
+    {
+        "name": "VPC_2",
+        "vpcID": "vpc-0ab6a5a04e78280f5"
+    }
+]

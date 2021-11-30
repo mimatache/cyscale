@@ -1,0 +1,34 @@
+[
+    {
+        "name": "NetworkInterface_1",
+        "networkInterfaceID": "eni-0c02d0e2602622897",
+        "securityGroupIDs": [
+            "sg-095531efae90566d5"
+        ],
+        "vpcID": "vpc-06bcacc5531641a68"
+    },
+    {
+        "name": "NetworkInterface_2",
+        "networkInterfaceID": "eni-0c1000541fb09e879",
+        "securityGroupIDs": [
+            "sg-095531efae90566d5"
+        ],
+        "vpcID": "vpc-06bcacc5531641a68"
+    },  
+    {
+        "name": "NetworkInterface_3",
+        "networkInterfaceID": "eni-0379983da6d546d5b",
+        "securityGroupIDs": [
+            "sg-0ffa6efa4cce53076"
+        ],
+        "vpcID": "vpc-0ab6a5a04e78280f5"
+    },
+    {
+        "name": "NetworkInterface_4",
+        "networkInterfaceID": "eni-0f41ca71be3851834",
+        "securityGroupIDs": [
+            "sg-0c1c60fcc9fddc6ff"
+        ],
+        "vpcID": "vpc-0ab6a5a04e78280f5"
+    }
+]

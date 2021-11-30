@@ -23,14 +23,17 @@ type puppy struct {
 }
 
 var (
+	bobita     = "Bobita"
 	bobitaBody = []byte("{\"name\":\"Bobita\", \"power\":500}")
+	azor       = "Azor"
 	azorBody   = []byte("{\"name\":\"Azor\", \"power\":457}")
+	smaug      = "Smaug"
 	smaugBody  = []byte("{\"name\":\"Azor\", \"power\":457, \"canFly\":true}")
 )
 
 func Test_Graph_Insert(t *testing.T) {
 	grf := graph.New()
-	createdNode := grf.InsertNode(puppyType, bobitaBody)
+	createdNode := grf.InsertNode(bobita, puppyType, bobitaBody)
 	node, err := grf.GetNodeByID(createdNode.GetID())
 	assert.NoError(t, err)
 	assert.Equal(t, bobitaBody, node.Body)
@@ -39,7 +42,7 @@ func Test_Graph_Insert(t *testing.T) {
 
 func Test_Graph_Insert_Imutable(t *testing.T) {
 	grf := graph.New()
-	createdNode := grf.InsertNode(puppyType, bobitaBody)
+	createdNode := grf.InsertNode(bobita, puppyType, bobitaBody)
 	node, err := grf.GetNodeByID(createdNode.GetID())
 	node.Body = []byte{}
 	assert.NoError(t, err)
@@ -56,10 +59,10 @@ func Test_Graph_AddConcurrently(t *testing.T) {
 	wg.Add(concurrencyCount)
 	grf := graph.New()
 	for i := 0; i < concurrencyCount; i++ {
-		go func() {
+		go func(i int) {
 			defer wg.Done()
-			grf.InsertNode(puppyType, []byte{})
-		}()
+			grf.InsertNode(fmt.Sprintf("item-%d", i), puppyType, []byte{})
+		}(i)
 	}
 	wg.Wait()
 	nodes := grf.ListNodes()
@@ -74,17 +77,17 @@ func Test_Graph_GetNodes_Missing(t *testing.T) {
 
 func Test_Graph_List(t *testing.T) {
 	grf := graph.New()
-	grf.InsertNode(puppyType, bobitaBody)
-	grf.InsertNode(puppyType, azorBody)
-	grf.InsertNode(dragonType, smaugBody)
+	grf.InsertNode(bobita, puppyType, bobitaBody)
+	grf.InsertNode(azor, puppyType, azorBody)
+	grf.InsertNode(smaug, dragonType, smaugBody)
 	foundNodes := grf.ListNodes()
 	assert.Equal(t, 3, len(foundNodes))
 }
 
 func Test_Graph_ListNodes_FilterByLabel(t *testing.T) {
 	grf := graph.New()
-	bNode := grf.InsertNode(puppyType, bobitaBody)
-	grf.InsertNode(dragonType, smaugBody)
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	grf.InsertNode(smaug, dragonType, smaugBody)
 	foundNodes := grf.ListNodes(graph.FilterNodesByLabel(puppyType))
 	assert.Equal(t, 1, len(foundNodes))
 	assert.Equal(t, bNode.GetID(), foundNodes[0].GetID())
@@ -99,8 +102,8 @@ func Test_Graph_ListNodes_Filter(t *testing.T) {
 		}
 		return pup.Power > 499
 	}
-	bNode := grf.InsertNode(puppyType, bobitaBody)
-	grf.InsertNode(puppyType, azorBody)
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	grf.InsertNode(azor, puppyType, azorBody)
 	foundNodes := grf.ListNodes(whereCond)
 	assert.Equal(t, 1, len(foundNodes))
 	assert.Equal(t, bNode.GetID(), foundNodes[0].GetID())
@@ -108,8 +111,8 @@ func Test_Graph_ListNodes_Filter(t *testing.T) {
 
 func Test_Graph_AddRelationship(t *testing.T) {
 	grf := graph.New()
-	bNode := grf.InsertNode(puppyType, bobitaBody)
-	aNode := grf.InsertNode(puppyType, azorBody)
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
 	rel1, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "friends")
 	assert.NoError(t, err)
 	rel2, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "competitors")
@@ -117,49 +120,28 @@ func Test_Graph_AddRelationship(t *testing.T) {
 	bNode, err = grf.GetNodeByID(bNode.GetID())
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(bNode.ListRelationships()))
-	assert.Contains(t, bNode.ListRelationships(), rel1)
-	assert.Contains(t, bNode.ListRelationships(), rel2)
+	assert.Contains(t, bNode.ListRelationships(), rel1.ID)
+	assert.Contains(t, bNode.ListRelationships(), rel2.ID)
 }
 
 func Test_Graph_AddRelationship_NoFrom(t *testing.T) {
 	grf := graph.New()
-	aNode := grf.InsertNode(puppyType, azorBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
 	_, err := grf.AddRelationship("bNode.GetID()", aNode.GetID(), "friends")
 	assert.Error(t, err)
 }
 
 func Test_Graph_AddRelationship_NoTo(t *testing.T) {
 	grf := graph.New()
-	aNode := grf.InsertNode(puppyType, azorBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
 	_, err := grf.AddRelationship(aNode.GetID(), "bNode.GetID()", "friends")
 	assert.Error(t, err)
 }
 
-func Test_Node_ListRelationships(t *testing.T) {
-	grf := graph.New()
-	bNode := grf.InsertNode(puppyType, bobitaBody)
-	aNode := grf.InsertNode(puppyType, azorBody)
-	dNode := grf.InsertNode(dragonType, smaugBody)
-	rel1, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "friends")
-	assert.NoError(t, err)
-	_, err = grf.AddRelationship(bNode.GetID(), aNode.GetID(), "competitors")
-	assert.NoError(t, err)
-	rel3, err := grf.AddRelationship(bNode.GetID(), dNode.GetID(), "enemies")
-	assert.NoError(t, err)
-	bNode, err = grf.GetNodeByID(bNode.GetID())
-	assert.NoError(t, err)
-	rels := bNode.ListRelationships(graph.FilterRelByLabel("friends"))
-	assert.Equal(t, 1, len(rels))
-	assert.Contains(t, rels, rel1)
-	rels = bNode.ListRelationships(graph.FilterRelByTo(dNode.GetID()))
-	assert.Equal(t, 1, len(rels))
-	assert.Contains(t, rels, rel3)
-}
-
 func Test_Graph_GetRelationship(t *testing.T) {
 	grf := graph.New()
-	bNode := grf.InsertNode(puppyType, bobitaBody)
-	aNode := grf.InsertNode(puppyType, azorBody)
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
 	initialRel, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "friends")
 	assert.NoError(t, err)
 	foundRel, err := grf.GetRelationshipByID(initialRel.ID)
@@ -176,9 +158,9 @@ func Test_Graph_GetRelationship_NotFound(t *testing.T) {
 
 func Test_Graph_ListRelationships(t *testing.T) {
 	grf := graph.New()
-	bNode := grf.InsertNode(puppyType, bobitaBody)
-	aNode := grf.InsertNode(puppyType, azorBody)
-	dNode := grf.InsertNode(dragonType, smaugBody)
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
+	dNode := grf.InsertNode(smaug, dragonType, smaugBody)
 	rel1, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "friends")
 	assert.NoError(t, err)
 	rel2, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "competitors")
@@ -194,9 +176,9 @@ func Test_Graph_ListRelationships(t *testing.T) {
 
 func Test_Graph_ListRelationships_Filter(t *testing.T) {
 	grf := graph.New()
-	bNode := grf.InsertNode(puppyType, bobitaBody)
-	aNode := grf.InsertNode(puppyType, azorBody)
-	dNode := grf.InsertNode(dragonType, smaugBody)
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
+	dNode := grf.InsertNode(smaug, dragonType, smaugBody)
 	rel1, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "friends")
 	assert.NoError(t, err)
 	_, err = grf.AddRelationship(bNode.GetID(), aNode.GetID(), "competitors")
@@ -210,9 +192,9 @@ func Test_Graph_ListRelationships_Filter(t *testing.T) {
 
 func Test_Graph_ListRelationships_FilterByFrom(t *testing.T) {
 	grf := graph.New()
-	bNode := grf.InsertNode(puppyType, bobitaBody)
-	aNode := grf.InsertNode(puppyType, azorBody)
-	dNode := grf.InsertNode(dragonType, smaugBody)
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
+	dNode := grf.InsertNode(smaug, dragonType, smaugBody)
 	rel1, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "friends")
 	assert.NoError(t, err)
 	_, err = grf.AddRelationship(dNode.GetID(), bNode.GetID(), "enemies")
