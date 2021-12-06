@@ -175,106 +175,40 @@ func (m *Manager) loadSGs(data []byte) error {
 
 // ListExposedVMs returns a list of VMs that accept connections from 0.0.0.0/0
 func (m *Manager) ListExposedVMs() []string {
-	exposedVMs := []string{}
-
-	openedSecurityGroups := m.graph.ListNodes(
-		graph.FilterNodesByLabel(SecurityGroupType),
-		func(node *graph.Node) bool {
-			sg := SecurityGroup{}
-			if err := json.Unmarshal(node.Body, &sg); err != nil {
-				// only printing the error, since an error here means there is no useful information to extract, but we still need to continue checking
-				// TODO: consider adding a check for invalid bodies?
-				log.Printf("error: unable to unmarshal security group %s; %s; this might indicate corrupt data \n", node.GetName(), err.Error())
-			}
-			for _, network := range sg.IPList {
-				if network == "0.0.0.0/0" {
-					return true
-				}
-			}
-			return false
-		})
-
-	for _, v := range openedSecurityGroups {
-		relationships := m.graph.ListRelationships(graph.FilterRelByTo(v.GetID()))
-		for _, item := range relationships {
-			items := m.graph.ListNodes(
-				graph.FilterNodesByLabel(VirtualMacineType),
-				func(node *graph.Node) bool {
-					return node.GetID() == item.From
-				})
-			for _, item := range items {
-				exposedVMs = append(exposedVMs, item.GetName())
+	rule := func(node *graph.Node) bool {
+		sg := SecurityGroup{}
+		if err := json.Unmarshal(node.Body, &sg); err != nil {
+			// only printing the error, since an error here means there is no useful information to extract, but we still need to continue checking
+			// TODO: consider adding a check for invalid bodies?
+			log.Printf("error: unable to unmarshal security group %s; %s; this might indicate corrupt data \n", node.GetName(), err.Error())
+		}
+		for _, network := range sg.IPList {
+			if network == "0.0.0.0/0" && sg.Direction == "inbound" {
+				return true
 			}
 		}
+		return false
 	}
-	return exposedVMs
+	return m.findVMsBySecurityIssue(rule)
 }
 
 // ListHTTPPortVMs returns a list of VMs that have port 80 opened, either directly on the VM, or on a connected interface
 func (m *Manager) ListHTTPPortVMs() []string {
-	exposedVMs := map[string]struct{}{}
-
-	// get security groups that habe port 80 opened
-	openedSecurityGroups := m.graph.ListNodes(
-		graph.FilterNodesByLabel(SecurityGroupType),
-		func(node *graph.Node) bool {
-			sg := SecurityGroup{}
-			if err := json.Unmarshal(node.Body, &sg); err != nil {
-				// only printing the error, since an error here means there is no useful information to extract, but we still need to continue checking
-				// TODO: consider adding a check for invalid bodies?
-				log.Printf("error: unable to unmarshal security group %s; %s; this might indicate corrupt data \n", node.GetName(), err.Error())
-			}
-			for _, port := range sg.ExposedPorts {
-				if port == 80 {
-					return true
-				}
-			}
-			return false
-		})
-
-	for _, v := range openedSecurityGroups {
-		// list all security group relationships
-		relationships := m.graph.ListRelationships(graph.FilterRelByTo(v.GetID()))
-		// get the nodes which are virtual machines
-		for _, item := range relationships {
-			items := m.graph.ListNodes(
-				graph.FilterNodesByLabel(VirtualMacineType),
-				func(node *graph.Node) bool {
-					return node.GetID() == item.From
-				})
-			for _, item := range items {
-				exposedVMs[item.GetName()] = struct{}{}
+	rule := func(node *graph.Node) bool {
+		sg := SecurityGroup{}
+		if err := json.Unmarshal(node.Body, &sg); err != nil {
+			// only printing the error, since an error here means there is no useful information to extract, but we still need to continue checking
+			// TODO: consider adding a check for invalid bodies?
+			log.Printf("error: unable to unmarshal security group %s; %s; this might indicate corrupt data \n", node.GetName(), err.Error())
+		}
+		for _, port := range sg.ExposedPorts {
+			if port == 80 && sg.Direction == "inbound" {
+				return true
 			}
 		}
-		// get the nodes that are interfaces
-		for _, item := range relationships {
-			items := m.graph.ListNodes(
-				graph.FilterNodesByLabel(InterfaceType),
-				func(node *graph.Node) bool {
-					return node.GetID() == item.From
-				})
-			// and then retrieve the VMs that use that interface
-			for _, item := range items {
-				relationships := m.graph.ListRelationships(graph.FilterRelByTo(item.GetID()))
-				for _, v := range relationships {
-					n, err := m.graph.GetNodeByID(v.From)
-					if err != nil {
-						// only logging this. It is not something we can handle here, and indicates some curruption in the data
-						log.Printf("error: unable to retrieve node %s; %s; this might that a node has been removed \n", v.From, err.Error())
-						continue
-					}
-					if n.GetLabel() == VirtualMacineType {
-						exposedVMs[n.GetName()] = struct{}{}
-					}
-				}
-			}
-		}
+		return false
 	}
-	items := []string{}
-	for k := range exposedVMs {
-		items = append(items, k)
-	}
-	return items
+	return m.findVMsBySecurityIssue(rule)
 }
 
 // ListConnections list all possible relationship chains between the 2 points
@@ -287,5 +221,29 @@ func (m *Manager) ListConnections(from, to string) ([]string, error) {
 	if len(fromNodes) != 1 {
 		return []string{}, fmt.Errorf("could not uniquely identify node %s; found %d elements", to, len(toNodes))
 	}
-	return m.graph.ListConnections(fromNodes[0], toNodes[0]), nil
+	chains := m.graph.ListConnections(fromNodes[0], toNodes[0])
+	connections := make([]string, len(chains))
+	for i, v := range chains {
+		fmt.Println(v.String())
+		connections[i] = v.String()
+	}
+	return connections, nil
+}
+
+// findVMsBySecurityIssue searches for VMs that have connections to a SecurityGroup that is in violation of the given rule
+func (m *Manager) findVMsBySecurityIssue(rule graph.FilterNodes) []string {
+	exposedVMs := []string{}
+	// get security groups that habe port 80 opened
+	openedSecurityGroups := m.graph.ListNodes(
+		graph.FilterNodesByLabel(SecurityGroupType),
+		rule)
+	vms := m.graph.ListNodes(graph.FilterNodesByLabel(VirtualMacineType))
+	for _, sg := range openedSecurityGroups {
+		for _, vm := range vms {
+			if cons := m.graph.ListConnections(vm, sg); len(cons) > 0 {
+				exposedVMs = append(exposedVMs, vm.GetName())
+			}
+		}
+	}
+	return exposedVMs
 }
