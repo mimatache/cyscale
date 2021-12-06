@@ -160,22 +160,15 @@ func (g *Graph) ListRelationships(filters ...FilterRelationship) []Relationship 
 }
 
 func (g *Graph) ListConnections(from, to *Node) []string {
-	gt := graphTraverse{
-		graph: g,
-	}
-	return gt.listConnections(from, to, map[string]struct{}{})
+	return g.listConnections(from, to, map[string]struct{}{})
 }
 
-type graphTraverse struct {
-	graph *Graph
-}
-
-func (gt *graphTraverse) listConnections(from, to *Node, visited map[string]struct{}) []string {
+func (g *Graph) listConnections(from, to *Node, visited map[string]struct{}) []string {
 	chains := []string{}
 	visited[from.id] = struct{}{}
 	for _, v := range from.relationships {
 		toCheck := copyMap(visited)
-		rel, ok := gt.graph.relationships[v]
+		rel, ok := g.relationships[v]
 		if !ok {
 			continue
 		}
@@ -188,11 +181,11 @@ func (gt *graphTraverse) listConnections(from, to *Node, visited map[string]stru
 			chains = append(chains, fmt.Sprintf("%s->%s->%s", from.String(), rel.String(), to.String()))
 			continue
 		}
-		next, ok := gt.graph.nodes[rel.To]
+		next, ok := g.nodes[rel.To]
 		if !ok {
 			continue
 		}
-		connections := gt.listConnections(next, to, toCheck)
+		connections := g.listConnections(next, to, toCheck)
 		for _, cons := range connections {
 			chains = append(chains, fmt.Sprintf("%s->%s->%s", from.String(), rel.String(), cons))
 		}
