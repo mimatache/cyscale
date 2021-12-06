@@ -3,6 +3,7 @@ package graph
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -159,12 +160,12 @@ func (g *Graph) ListRelationships(filters ...FilterRelationship) []Relationship 
 	return matchingRelationships
 }
 
-func (g *Graph) ListConnections(from, to *Node) []string {
+func (g *Graph) ListConnections(from, to *Node) []*ChainLink {
 	return g.listConnections(from, to, map[string]struct{}{})
 }
 
-func (g *Graph) listConnections(from, to *Node, visited map[string]struct{}) []string {
-	chains := []string{}
+func (g *Graph) listConnections(from, to *Node, visited map[string]struct{}) []*ChainLink {
+	chains := []*ChainLink{}
 	visited[from.id] = struct{}{}
 	for _, v := range from.relationships {
 		toCheck := copyMap(visited)
@@ -178,7 +179,7 @@ func (g *Graph) listConnections(from, to *Node, visited map[string]struct{}) []s
 		}
 		toCheck[rel.To] = struct{}{}
 		if rel.To == to.id {
-			chains = append(chains, fmt.Sprintf("%s->%s->%s", from.String(), rel.String(), to.String()))
+			chains = append(chains, &ChainLink{node: from.Copy(), rel: rel, next: &ChainLink{node: to}})
 			continue
 		}
 		next, ok := g.nodes[rel.To]
@@ -187,7 +188,7 @@ func (g *Graph) listConnections(from, to *Node, visited map[string]struct{}) []s
 		}
 		connections := g.listConnections(next, to, toCheck)
 		for _, cons := range connections {
-			chains = append(chains, fmt.Sprintf("%s->%s->%s", from.String(), rel.String(), cons))
+			chains = append(chains, &ChainLink{node: from.Copy(), rel: rel, next: cons})
 		}
 	}
 	return chains
@@ -199,4 +200,24 @@ func copyMap(m map[string]struct{}) map[string]struct{} {
 		n[k] = v
 	}
 	return n
+}
+
+type ChainLink struct {
+	node *Node
+	rel  Relationship
+	next *ChainLink
+}
+
+func (c *ChainLink) String() string {
+	var sb strings.Builder
+	if c.node != nil {
+		sb.WriteString(c.node.String())
+	}
+	if c.rel.ID != "" {
+		sb.WriteString(fmt.Sprintf("->%s", c.rel.String()))
+	}
+	if c.next != nil {
+		sb.WriteString(fmt.Sprintf("->%s", c.next.String()))
+	}
+	return sb.String()
 }
