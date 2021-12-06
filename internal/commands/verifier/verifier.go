@@ -81,7 +81,7 @@ var vmUsingHTTPPort = &cobra.Command{
 
 var listConnections = &cobra.Command{
 	Use:   "list-connections",
-	Short: "list-connections shows how to assets connect to each other. Example `list-connections intf1 vpc1`",
+	Short: "list-connections shows how two assets connect to each other. Example `list-connections intf1 vpc1`",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
 			return fmt.Errorf("list-connections requires two arguments to function correctly")
