@@ -16,7 +16,7 @@ type FilterNodes func(node *Node) bool
 func FilterNodesByLabel(labels ...string) FilterNodes {
 	return func(node *Node) bool {
 		for _, label := range labels {
-			if node.label == label {
+			if node.GetLabel() == label {
 				return true
 			}
 		}
@@ -27,7 +27,7 @@ func FilterNodesByLabel(labels ...string) FilterNodes {
 func FilterNodesByName(names ...string) FilterNodes {
 	return func(node *Node) bool {
 		for _, name := range names {
-			if node.name == name {
+			if node.GetName() == name {
 				return true
 			}
 		}
@@ -110,7 +110,7 @@ func (g *Graph) ListNodes(where ...FilterNodes) []*Node {
 	return matchingNodes
 }
 
-// Link is used to establish a relationship between the current item and another one
+// AddRelationship is used to establish a unidirectional relationship between the two items in the graph
 func (g *Graph) AddRelationship(fromID, toID, label string) (Relationship, error) {
 	fromNode, err := g.GetNodeByID(fromID)
 	if err != nil {
@@ -157,4 +157,53 @@ func (g *Graph) ListRelationships(filters ...FilterRelationship) []Relationship 
 	}
 
 	return matchingRelationships
+}
+
+func (g *Graph) ListConnections(from, to *Node) []string {
+	gt := graphTraverse{
+		graph: g,
+	}
+	return gt.listConnections(from, to, map[string]struct{}{})
+}
+
+type graphTraverse struct {
+	graph *Graph
+}
+
+func (gt *graphTraverse) listConnections(from, to *Node, visited map[string]struct{}) []string {
+	chains := []string{}
+	visited[from.id] = struct{}{}
+	for _, v := range from.relationships {
+		toCheck := copyMap(visited)
+		rel, ok := gt.graph.relationships[v]
+		if !ok {
+			continue
+		}
+		// check if the relationship has already been visited. If it has, then go to the next one
+		if _, ok := visited[rel.To]; ok {
+			continue
+		}
+		toCheck[rel.To] = struct{}{}
+		if rel.To == to.id {
+			chains = append(chains, fmt.Sprintf("%s->%s->%s", from.String(), rel.String(), to.String()))
+			continue
+		}
+		next, ok := gt.graph.nodes[rel.To]
+		if !ok {
+			continue
+		}
+		connections := gt.listConnections(next, to, toCheck)
+		for _, cons := range connections {
+			chains = append(chains, fmt.Sprintf("%s->%s->%s", from.String(), rel.String(), cons))
+		}
+	}
+	return chains
+}
+
+func copyMap(m map[string]struct{}) map[string]struct{} {
+	n := map[string]struct{}{}
+	for k, v := range m {
+		n[k] = v
+	}
+	return n
 }

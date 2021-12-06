@@ -273,3 +273,16 @@ func (m *Manager) ListHTTPPortVMs() []string {
 	}
 	return items
 }
+
+// ListConnections list all possible relationship chains between the 2 points
+func (m *Manager) ListConnections(from, to string) ([]string, error) {
+	fromNodes := m.graph.ListNodes(graph.FilterNodesByName(from))
+	if len(fromNodes) != 1 {
+		return []string{}, fmt.Errorf("could not uniquely identify node %s; found %d elements", from, len(fromNodes))
+	}
+	toNodes := m.graph.ListNodes(graph.FilterNodesByName(to))
+	if len(fromNodes) != 1 {
+		return []string{}, fmt.Errorf("could not uniquely identify node %s; found %d elements", to, len(toNodes))
+	}
+	return m.graph.ListConnections(fromNodes[0], toNodes[0]), nil
+}
