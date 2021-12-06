@@ -19,7 +19,7 @@ LDFLAGS += -X 'github.com/mimatache/cyscale/internal/info.buildDate=${BUILD_DATE
 all: install-go-tools lint test build
 
 build:
-	GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -v -o $(BIN_DIR)/$(APP) .
+	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -v -o $(BIN_DIR)/$(APP) .
 
 test-ci:
 	go test -v  -race -json -coverprofile=coverage.out ./... > unit-test.json
