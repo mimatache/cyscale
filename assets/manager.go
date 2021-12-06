@@ -15,6 +15,7 @@ const (
 	VirtualMacineType = "vm"
 )
 
+// NewManager creates a new instance of an asset manager, allong with loading the data that will be used by it
 func NewManager(graph *graph.Graph, vpcData, sgData, interfaceData, vmData []byte) (*Manager, error) {
 	m := &Manager{
 		graph: graph,
@@ -172,6 +173,7 @@ func (m *Manager) loadSGs(data []byte) error {
 	return nil
 }
 
+// ListExposedVMs returns a list of VMs that accept connections from 0.0.0.0/0
 func (m *Manager) ListExposedVMs() []string {
 	exposedVMs := []string{}
 
@@ -208,6 +210,7 @@ func (m *Manager) ListExposedVMs() []string {
 	return exposedVMs
 }
 
+// ListHTTPPortVMs returns a list of VMs that have port 80 opened, either directly on the VM, or on a connected interface
 func (m *Manager) ListHTTPPortVMs() []string {
 	exposedVMs := map[string]struct{}{}
 

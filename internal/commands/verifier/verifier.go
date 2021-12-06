@@ -23,10 +23,10 @@ func Verify() *cobra.Command {
 		Short: "verify is used to check conditions",
 	}
 
-	verifyCommand.PersistentFlags().StringVar(&interfaces, "interfaces", "testdata/NetworkInterface.json", "path to file containing network interfaces to verify")
-	verifyCommand.PersistentFlags().StringVar(&vms, "virtual-machines", "testdata/VM.json", "path to file containing VMs to verify")
-	verifyCommand.PersistentFlags().StringVar(&sgs, "security-groups", "testdata/SecurityGroup.json", "path to file containing security groups to verify")
-	verifyCommand.PersistentFlags().StringVar(&vpcs, "virtual-private-cloud", "testdata/VPC.json", "path to file containing VPCs to verify")
+	verifyCommand.PersistentFlags().StringVar(&interfaces, "interfaces", "data/NetworkInterface.json", "path to file containing network interfaces to verify")
+	verifyCommand.PersistentFlags().StringVar(&vms, "virtual-machines", "data/VM.json", "path to file containing VMs to verify")
+	verifyCommand.PersistentFlags().StringVar(&sgs, "security-groups", "data/SecurityGroup.json", "path to file containing security groups to verify")
+	verifyCommand.PersistentFlags().StringVar(&vpcs, "virtual-private-cloud", "data/VPC.json", "path to file containing VPCs to verify")
 
 	verifyCommand.AddCommand(
 		exposedVMCommand,
@@ -81,7 +81,7 @@ var vmUsingHTTPPort = &cobra.Command{
 
 var listConnections = &cobra.Command{
 	Use:   "list-connections",
-	Short: "list-connections shows how to assets connect to each other. Example `list-connections intf1 vpc1`",
+	Short: "list-connections shows how two assets connect to each other. Example `list-connections intf1 vpc1`",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 2 {
 			return fmt.Errorf("list-connections requires two arguments to function correctly")
