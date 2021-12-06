@@ -93,6 +93,15 @@ func Test_Graph_ListNodes_FilterByLabel(t *testing.T) {
 	assert.Equal(t, bNode.GetID(), foundNodes[0].GetID())
 }
 
+func Test_Graph_ListNodes_FilterByName(t *testing.T) {
+	grf := graph.New()
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	grf.InsertNode(smaug, dragonType, smaugBody)
+	foundNodes := grf.ListNodes(graph.FilterNodesByName(bobita))
+	assert.Equal(t, 1, len(foundNodes))
+	assert.Equal(t, bNode.GetID(), foundNodes[0].GetID())
+}
+
 func Test_Graph_ListNodes_Filter(t *testing.T) {
 	grf := graph.New()
 	whereCond := func(body *graph.Node) bool {
@@ -202,4 +211,41 @@ func Test_Graph_ListRelationships_FilterByFrom(t *testing.T) {
 	rels := grf.ListRelationships(graph.FilterRelByFrom(bNode.GetID()))
 	assert.Equal(t, 1, len(rels))
 	assert.Contains(t, rels, rel1)
+}
+
+func Test_Graph_ListRelationships_FilterByTo(t *testing.T) {
+	grf := graph.New()
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
+	dNode := grf.InsertNode(smaug, dragonType, smaugBody)
+	rel1, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "friends")
+	assert.NoError(t, err)
+	_, err = grf.AddRelationship(dNode.GetID(), bNode.GetID(), "enemies")
+	assert.NoError(t, err)
+	rels := grf.ListRelationships(graph.FilterRelByTo(aNode.GetID()))
+	assert.Equal(t, 1, len(rels))
+	assert.Contains(t, rels, rel1)
+}
+
+func Test_Graph_ListConnections(t *testing.T) {
+	grf := graph.New()
+	bNode := grf.InsertNode(bobita, puppyType, bobitaBody)
+	aNode := grf.InsertNode(azor, puppyType, azorBody)
+	dNode := grf.InsertNode(smaug, dragonType, smaugBody)
+	_, err := grf.AddRelationship(bNode.GetID(), aNode.GetID(), "friends")
+	assert.NoError(t, err)
+	_, err = grf.AddRelationship(bNode.GetID(), dNode.GetID(), "enemies")
+	assert.NoError(t, err)
+	_, err = grf.AddRelationship(aNode.GetID(), dNode.GetID(), "enemies")
+	assert.NoError(t, err)
+	_, err = grf.AddRelationship(aNode.GetID(), bNode.GetID(), "friends")
+	assert.NoError(t, err)
+	_, err = grf.AddRelationship(aNode.GetID(), bNode.GetID(), "friends")
+	assert.NoError(t, err)
+	bNode, err = grf.GetNodeByID(bNode.GetID())
+	assert.NoError(t, err)
+	dNode, err = grf.GetNodeByID(dNode.GetID())
+	assert.NoError(t, err)
+	cons := grf.ListConnections(bNode, dNode)
+	assert.Len(t, cons, 2)
 }

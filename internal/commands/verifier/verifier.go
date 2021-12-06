@@ -31,6 +31,7 @@ func Verify() *cobra.Command {
 	verifyCommand.AddCommand(
 		exposedVMCommand,
 		vmUsingHTTPPort,
+		listConnections,
 	)
 
 	return verifyCommand
@@ -67,12 +68,39 @@ var vmUsingHTTPPort = &cobra.Command{
 		}
 		vms := m.ListHTTPPortVMs()
 		if len(vms) == 0 {
-			fmt.Println("There are VMs using the HTTP port")
+			fmt.Println("There are no VMs using the HTTP port")
 			return nil
 		}
 		fmt.Println("VMs using HTTP port:")
 		for _, vm := range vms {
 			fmt.Printf("\t• %s\n", vm)
+		}
+		return nil
+	},
+}
+
+var listConnections = &cobra.Command{
+	Use:   "list-connections",
+	Short: "list-connections shows how to assets connect to each other. Example `list-connections intf1 vpc1`",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 2 {
+			return fmt.Errorf("list-connections requires two arguments to function correctly")
+		}
+		m, err := getAssetManager(interfaces, vms, sgs, vpcs)
+		if err != nil {
+			return fmt.Errorf("could not load assets; %w", err)
+		}
+		connections, err := m.ListConnections(args[0], args[1])
+		if err != nil {
+			return err
+		}
+		if len(connections) == 0 {
+			fmt.Printf("There are no connections between %s and %s\n", args[0], args[1])
+			return nil
+		}
+		fmt.Printf("Connections between %s and %s\n", args[0], args[1])
+		for _, conn := range connections {
+			fmt.Printf("\t• %s\n", conn)
 		}
 		return nil
 	},
