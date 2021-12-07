@@ -69,7 +69,6 @@ func Test_Graph_AddConcurrently(t *testing.T) {
 	assert.Equal(t, concurrencyCount, len(nodes), "not all node types were added")
 }
 
-
 func Test_Graph_AddRelationshipConcurrently(t *testing.T) {
 	concurrencyCount := 100
 	types := make([]string, concurrencyCount)
@@ -84,7 +83,7 @@ func Test_Graph_AddRelationshipConcurrently(t *testing.T) {
 	for i := 0; i < concurrencyCount; i++ {
 		go func(i int) {
 			defer wg.Done()
-			_, err := grf.AddRelationship(createdNodeOne.GetID(),  createdNodeTwo.Copy().GetID(), fmt.Sprintf("item-%d", i))
+			_, err := grf.AddRelationship(createdNodeOne.GetID(), createdNodeTwo.Copy().GetID(), fmt.Sprintf("item-%d", i))
 			assert.NoError(t, err)
 		}(i)
 	}
