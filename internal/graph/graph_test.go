@@ -69,6 +69,29 @@ func Test_Graph_AddConcurrently(t *testing.T) {
 	assert.Equal(t, concurrencyCount, len(nodes), "not all node types were added")
 }
 
+
+func Test_Graph_AddRelationshipConcurrently(t *testing.T) {
+	concurrencyCount := 100
+	types := make([]string, concurrencyCount)
+	grf := graph.New()
+	createdNodeOne := grf.InsertNode(bobita, puppyType, bobitaBody)
+	createdNodeTwo := grf.InsertNode(azor, puppyType, azorBody)
+	for i := 0; i < concurrencyCount; i++ {
+		types[i] = fmt.Sprintf("type-%d", i)
+	}
+	var wg sync.WaitGroup
+	wg.Add(concurrencyCount)
+	for i := 0; i < concurrencyCount; i++ {
+		go func(i int) {
+			defer wg.Done()
+			_, err := grf.AddRelationship(createdNodeOne.GetID(),  createdNodeTwo.Copy().GetID(), fmt.Sprintf("item-%d", i))
+			assert.NoError(t, err)
+		}(i)
+	}
+	wg.Wait()
+	rels := grf.ListRelationships()
+	assert.Equal(t, concurrencyCount, len(rels), "not all node types were added")
+}
 func Test_Graph_GetNodes_Missing(t *testing.T) {
 	grf := graph.New()
 	_, err := grf.GetNodeByID("bobitaNodeID")

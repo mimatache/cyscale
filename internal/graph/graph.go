@@ -121,7 +121,8 @@ func (g *Graph) AddRelationship(fromID, toID, label string) (Relationship, error
 	if err != nil {
 		return Relationship{}, fmt.Errorf("getNodeByID %s; %w", fromID, err)
 	}
-
+	g.Lock()
+	defer g.Unlock()
 	rel := newRelationship(fromNode, toNode, label)
 	fromNode.addRelationship(rel.ID)
 	g.relationships[rel.ID] = rel
