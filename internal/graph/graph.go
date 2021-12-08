@@ -12,10 +12,10 @@ var (
 )
 
 // FilterNodes is used as an interface for filtering functionality. This allows each user to provide their own way of filtering different items
-type FilterNodes func(node *Node) bool
+type FilterNodes func(node Node) bool
 
 func FilterNodesByLabel(labels ...string) FilterNodes {
-	return func(node *Node) bool {
+	return func(node Node) bool {
 		for _, label := range labels {
 			if node.GetLabel() == label {
 				return true
@@ -26,7 +26,7 @@ func FilterNodesByLabel(labels ...string) FilterNodes {
 }
 
 func FilterNodesByName(names ...string) FilterNodes {
-	return func(node *Node) bool {
+	return func(node Node) bool {
 		for _, name := range names {
 			if node.GetName() == name {
 				return true
@@ -58,7 +58,7 @@ func FilterRelByFrom(fromID string) FilterRelationship {
 
 func New() *Graph {
 	return &Graph{
-		nodes:         map[string]*Node{},
+		nodes:         map[string]Node{},
 		relationships: map[string]Relationship{},
 	}
 }
@@ -66,35 +66,35 @@ func New() *Graph {
 // Graph represents a collection of different nodes of the same type
 type Graph struct {
 	sync.RWMutex
-	nodes         map[string]*Node
+	nodes         map[string]Node
 	relationships map[string]Relationship
 }
 
 // InsertNode adds a new node to the graph
-func (g *Graph) InsertNode(name, label string, body []byte) *Node {
+func (g *Graph) InsertNode(name, label string, body []byte) Node {
 	g.Lock()
 	defer g.Unlock()
 	node := newNode(name, label, body)
 	g.nodes[node.id] = node
-	return node.Copy()
+	return node
 }
 
 // GetNodeByID returns the node that has the given ID
-func (g *Graph) GetNodeByID(id string) (*Node, error) {
+func (g *Graph) GetNodeByID(id string) (Node, error) {
 	g.RLock()
 	defer g.RUnlock()
 	item, ok := g.nodes[id]
 	if !ok {
-		return nil, fmt.Errorf("%w; node with id '%s'", ErrNotFound, id)
+		return Node{}, fmt.Errorf("%w; node with id '%s'", ErrNotFound, id)
 	}
 	return item, nil
 }
 
 // ListNodes returns a map of all the nodes that match all the where clauses provided.
-func (g *Graph) ListNodes(where ...FilterNodes) []*Node {
+func (g *Graph) ListNodes(where ...FilterNodes) []Node {
 	g.RLock()
 	defer g.RUnlock()
-	matchingNodes := make([]*Node, 0, len(g.nodes))
+	matchingNodes := make([]Node, 0, len(g.nodes))
 	for _, item := range g.nodes {
 		matches := true
 		for _, clause := range where {
@@ -125,7 +125,6 @@ func (g *Graph) AddRelationship(fromID, toID, label string) (Relationship, error
 	g.Lock()
 	defer g.Unlock()
 	rel := newRelationship(fromNode, toNode, label)
-	fromNode.addRelationship(rel.ID)
 	g.relationships[rel.ID] = rel
 
 	return rel, nil
@@ -161,26 +160,22 @@ func (g *Graph) ListRelationships(filters ...FilterRelationship) []Relationship 
 	return matchingRelationships
 }
 
-func (g *Graph) ListConnections(from, to *Node) []*ChainLink {
+func (g *Graph) ListConnections(from, to Node) []*ChainLink {
 	return g.listConnections(from, to, map[string]struct{}{})
 }
 
-func (g *Graph) listConnections(from, to *Node, visited map[string]struct{}) []*ChainLink {
+func (g *Graph) listConnections(from, to Node, visited map[string]struct{}) []*ChainLink {
 	chains := []*ChainLink{}
 	visited[from.id] = struct{}{}
-	for _, v := range from.relationships {
+	for _, rel := range g.ListRelationships(FilterRelByFrom(from.GetID())) {
 		toCheck := copyMap(visited)
-		rel, ok := g.relationships[v]
-		if !ok {
-			continue
-		}
 		// check if the relationship has already been visited. If it has, then go to the next one
 		if _, ok := visited[rel.To]; ok {
 			continue
 		}
 		toCheck[rel.To] = struct{}{}
 		if rel.To == to.id {
-			chains = append(chains, &ChainLink{node: from.Copy(), rel: rel, next: &ChainLink{node: to}})
+			chains = append(chains, &ChainLink{node: from, rel: rel, next: &ChainLink{node: to}})
 			continue
 		}
 		next, ok := g.nodes[rel.To]
@@ -189,7 +184,7 @@ func (g *Graph) listConnections(from, to *Node, visited map[string]struct{}) []*
 		}
 		connections := g.listConnections(next, to, toCheck)
 		for _, cons := range connections {
-			chains = append(chains, &ChainLink{node: from.Copy(), rel: rel, next: cons})
+			chains = append(chains, &ChainLink{node: from, rel: rel, next: cons})
 		}
 	}
 	return chains
@@ -204,14 +199,14 @@ func copyMap(m map[string]struct{}) map[string]struct{} {
 }
 
 type ChainLink struct {
-	node *Node
+	node Node
 	rel  Relationship
 	next *ChainLink
 }
 
 func (c *ChainLink) String() string {
 	var sb strings.Builder
-	if c.node != nil {
+	if c.node.GetID() != "" {
 		sb.WriteString(c.node.String())
 	}
 	if c.rel.ID != "" {

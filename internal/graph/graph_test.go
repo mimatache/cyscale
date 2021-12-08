@@ -83,7 +83,7 @@ func Test_Graph_AddRelationshipConcurrently(t *testing.T) {
 	for i := 0; i < concurrencyCount; i++ {
 		go func(i int) {
 			defer wg.Done()
-			_, err := grf.AddRelationship(createdNodeOne.GetID(), createdNodeTwo.Copy().GetID(), fmt.Sprintf("item-%d", i))
+			_, err := grf.AddRelationship(createdNodeOne.GetID(), createdNodeTwo.GetID(), fmt.Sprintf("item-%d", i))
 			assert.NoError(t, err)
 		}(i)
 	}
@@ -126,7 +126,7 @@ func Test_Graph_ListNodes_FilterByName(t *testing.T) {
 
 func Test_Graph_ListNodes_Filter(t *testing.T) {
 	grf := graph.New()
-	whereCond := func(body *graph.Node) bool {
+	whereCond := func(body graph.Node) bool {
 		pup := puppy{}
 		if err := json.Unmarshal(body.Body, &pup); err != nil {
 			return false
@@ -150,9 +150,9 @@ func Test_Graph_AddRelationship(t *testing.T) {
 	assert.NoError(t, err)
 	bNode, err = grf.GetNodeByID(bNode.GetID())
 	assert.NoError(t, err)
-	assert.Equal(t, 2, len(bNode.ListRelationships()))
-	assert.Contains(t, bNode.ListRelationships(), rel1.ID)
-	assert.Contains(t, bNode.ListRelationships(), rel2.ID)
+	assert.Equal(t, 2, len(grf.ListRelationships()))
+	assert.Contains(t, grf.ListRelationships(), rel1)
+	assert.Contains(t, grf.ListRelationships(), rel2)
 }
 
 func Test_Graph_AddRelationship_NoFrom(t *testing.T) {

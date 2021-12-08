@@ -19,8 +19,8 @@ const (
 func NewManager(graph *graph.Graph, vpcData, sgData, interfaceData, vmData []byte) (*Manager, error) {
 	m := &Manager{
 		graph: graph,
-		items: map[string]string{},
 	}
+
 	if err := m.loadVPCs(vpcData); err != nil {
 		return nil, err
 	}
@@ -38,7 +38,6 @@ func NewManager(graph *graph.Graph, vpcData, sgData, interfaceData, vmData []byt
 
 type Manager struct {
 	graph *graph.Graph
-	items map[string]string
 }
 
 func (m *Manager) loadInterfaces(data []byte) error {
@@ -175,7 +174,7 @@ func (m *Manager) loadSGs(data []byte) error {
 
 // ListExposedVMs returns a list of VMs that accept connections from 0.0.0.0/0
 func (m *Manager) ListExposedVMs() []string {
-	rule := func(node *graph.Node) bool {
+	rule := func(node graph.Node) bool {
 		sg := SecurityGroup{}
 		if err := json.Unmarshal(node.Body, &sg); err != nil {
 			// only printing the error, since an error here means there is no useful information to extract, but we still need to continue checking
@@ -194,7 +193,7 @@ func (m *Manager) ListExposedVMs() []string {
 
 // ListHTTPPortVMs returns a list of VMs that have port 80 opened, either directly on the VM, or on a connected interface
 func (m *Manager) ListHTTPPortVMs() []string {
-	rule := func(node *graph.Node) bool {
+	rule := func(node graph.Node) bool {
 		sg := SecurityGroup{}
 		if err := json.Unmarshal(node.Body, &sg); err != nil {
 			// only printing the error, since an error here means there is no useful information to extract, but we still need to continue checking
@@ -224,7 +223,6 @@ func (m *Manager) ListConnections(from, to string) ([]string, error) {
 	chains := m.graph.ListConnections(fromNodes[0], toNodes[0])
 	connections := make([]string, len(chains))
 	for i, v := range chains {
-		fmt.Println(v.String())
 		connections[i] = v.String()
 	}
 	return connections, nil
