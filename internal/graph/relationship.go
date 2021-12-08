@@ -15,7 +15,7 @@ type Relationship struct {
 	ToName   string
 }
 
-func newRelationship(from, to *Node, label string) Relationship {
+func newRelationship(from, to Node, label string) Relationship {
 	return Relationship{
 		ID:       guuid.New().String(),
 		Label:    label,
