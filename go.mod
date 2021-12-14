@@ -3,13 +3,14 @@ module github.com/mimatache/cyscale
 go 1.17
 
 require (
-	github.com/google/uuid v1.3.0
+	github.com/curious-kitten/assets v0.1.0
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
