@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	graph "github.com/curious-kitten/assets"
 	"github.com/spf13/cobra"
 
 	"github.com/mimatache/cyscale/assets"
-	"github.com/mimatache/cyscale/internal/graph"
 )
 
 var (
@@ -107,7 +107,7 @@ var listConnections = &cobra.Command{
 }
 
 func getAssetManager(interfaces, vms, sgs, vpcs string) (*assets.Manager, error) {
-	graph := graph.New()
+	graph := graph.NewGraph()
 	interfaceContents, err := os.ReadFile(interfaces)
 	if err != nil {
 		return nil, fmt.Errorf("could not read interface file %s; %w", interfaces, err)

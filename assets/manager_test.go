@@ -4,10 +4,10 @@ import (
 	"os"
 	"testing"
 
+	graph "github.com/curious-kitten/assets"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/mimatache/cyscale/assets"
-	"github.com/mimatache/cyscale/internal/graph"
 )
 
 func Test_NewManager(t *testing.T) {
@@ -23,7 +23,7 @@ func Test_NewManager(t *testing.T) {
 	sgContents, err := os.ReadFile("testdata/SecurityGroup.json")
 	assert.NoError(t, err, "error reading files")
 
-	grf := graph.New()
+	grf := graph.NewGraph()
 	_, err = assets.NewManager(grf, vpcContents, sgContents, intfContents, vmContents)
 	assert.NoError(t, err)
 
@@ -44,7 +44,7 @@ func Test_ExposedVMs(t *testing.T) {
 	sgContents, err := os.ReadFile("testdata/SecurityGroup.json")
 	assert.NoError(t, err, "error reading files")
 
-	grf := graph.New()
+	grf := graph.NewGraph()
 	m, err := assets.NewManager(grf, vpcContents, sgContents, intfContents, vmContents)
 	assert.NoError(t, err)
 
@@ -67,7 +67,7 @@ func Test_ListHTTPPortVMs(t *testing.T) {
 	sgContents, err := os.ReadFile("testdata/SecurityGroup.json")
 	assert.NoError(t, err, "error reading files")
 
-	grf := graph.New()
+	grf := graph.NewGraph()
 	m, err := assets.NewManager(grf, vpcContents, sgContents, intfContents, vmContents)
 	assert.NoError(t, err)
 
@@ -89,7 +89,7 @@ func Test_ListConnections(t *testing.T) {
 	sgContents, err := os.ReadFile("testdata/SecurityGroup.json")
 	assert.NoError(t, err, "error reading files")
 
-	grf := graph.New()
+	grf := graph.NewGraph()
 	m, err := assets.NewManager(grf, vpcContents, sgContents, intfContents, vmContents)
 	assert.NoError(t, err)
 

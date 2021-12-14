@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mimatache/cyscale/internal/graph"
+	graph "github.com/curious-kitten/assets"
 )
 
 const (
@@ -58,7 +58,7 @@ func (m *Manager) loadInterfaces(data []byte) error {
 			vpcs = append(vpcs, n)
 		}
 		for _, vpc := range vpcs {
-			if _, err := m.graph.AddRelationship(node.GetID(), vpc.GetID(), "part_of"); err != nil {
+			if _, err := m.graph.AddRelationship(node, vpc, "part_of"); err != nil {
 				return err
 			}
 		}
@@ -70,7 +70,7 @@ func (m *Manager) loadInterfaces(data []byte) error {
 				sgs = append(sgs, n)
 			}
 			for _, sgNode := range sgs {
-				if _, err := m.graph.AddRelationship(node.GetID(), sgNode.GetID(), "part_of"); err != nil {
+				if _, err := m.graph.AddRelationship(node, sgNode, "part_of"); err != nil {
 					return err
 				}
 			}
@@ -112,7 +112,7 @@ func (m *Manager) loadVMs(data []byte) error {
 			vpcs = append(vpcs, n)
 		}
 		for _, vpc := range vpcs {
-			if _, err := m.graph.AddRelationship(node.GetID(), vpc.GetID(), "part_of"); err != nil {
+			if _, err := m.graph.AddRelationship(node, vpc, "part_of"); err != nil {
 				return err
 			}
 		}
@@ -124,7 +124,7 @@ func (m *Manager) loadVMs(data []byte) error {
 				sgs = append(sgs, n)
 			}
 			for _, sgNode := range sgs {
-				if _, err := m.graph.AddRelationship(node.GetID(), sgNode.GetID(), "part_of"); err != nil {
+				if _, err := m.graph.AddRelationship(node, sgNode, "part_of"); err != nil {
 					return err
 				}
 			}
@@ -137,7 +137,7 @@ func (m *Manager) loadVMs(data []byte) error {
 				intfs = append(intfs, n)
 			}
 			for _, intfNode := range intfs {
-				if _, err := m.graph.AddRelationship(node.GetID(), intfNode.GetID(), "using"); err != nil {
+				if _, err := m.graph.AddRelationship(node, intfNode, "using"); err != nil {
 					return err
 				}
 			}
@@ -164,7 +164,7 @@ func (m *Manager) loadSGs(data []byte) error {
 			vpcs = append(vpcs, n)
 		}
 		for _, vpc := range vpcs {
-			if _, err := m.graph.AddRelationship(node.GetID(), vpc.GetID(), "part_of"); err != nil {
+			if _, err := m.graph.AddRelationship(node, vpc, "part_of"); err != nil {
 				return err
 			}
 		}
